@@ -117,20 +117,31 @@ for i, body in enumerate(rigid_bodies):
 body_plot = ax.plot(x, y, c='b', linestyle='', marker='.')
 plot.pause(0.00833333) # 1second/120fps
 
+X = []
+Y = []
 for i in list(range(1, 3150)):
     x = []
     y = [] # is pos_z since mocap uses y as vertical axis
 
-    print(i)
+
     for body in rigid_bodies:
-        x.append(rigid_bodies[body][i]['pos_z'])
-        y.append(rigid_bodies[body][i]['pos_x'])
+         x.append(rigid_bodies[body][i]['pos_z'])
+         y.append(rigid_bodies[body][i]['pos_x'])
     
-        for i3 in range(0, len(body_plot)):
-            body_plot[i3].set_xdata(x)
-            body_plot[i3].set_ydata(y)
+    X.append(x)
+    Y.append(y)
+    
 
     #print(i, rigid_bodies['Rigid Body 3:Marker1'][i]['time'])
+
+for i in list(range(1, 3150)):
+
+    print(i)
+
+    for i3 in range(0, len(body_plot)):
+        body_plot[i3].set_xdata(X[i])
+        body_plot[i3].set_ydata(Y[i])
+
     plot.pause(0.001)
 
 

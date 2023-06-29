@@ -1,11 +1,13 @@
 import csv
+import io
+import numpy as np
+import cv2
 import matplotlib
+matplotlib.use('agg')
 from matplotlib import pyplot as plot
-import time as timeee
-import math
-import time
 
-def create_marker_data(path_to_csv, marker_tag):
+
+def create_marker_data(path_to_csv, marker_tag, highlight_tag=None):
     '''
     Input: 
         path_to_csv:
@@ -35,205 +37,229 @@ def create_marker_data(path_to_csv, marker_tag):
             break
 
     data_frame = []
-    for frame in list(range(7, data_length+7)):
+    if ':' in marker_tag:
+        for frame in list(range(7, data_length+7)):
+            try:
+                # time data:
+                time = float(reader_obj[frame][1])
 
-        try:
-            # time data:
-            time = float(reader_obj[frame][1])
+                # color data:
+                if any(marker_tag == tag for tag in highlight_tag):
+                    color = 'r'
+                elif ':' not in marker_tag:
+                    color = 'y'
+                else:
+                    color = 'b'
 
-            # rot_y data:
-            y_rotation = float(reader_obj[frame][column_num + 1])
+                # rot_y data:
+                y_rotation = float("NaN")
 
-            # pos_x data:
-            x_position = float(reader_obj[frame][column_num + 3])
+                # pos_x data:
+                x_position = float(reader_obj[frame][column_num])
 
-            # pos_y data: 
-            y_position = float(reader_obj[frame][column_num + 4])
+                # pos_y data: 
+                y_position = float(reader_obj[frame][column_num + 1])
 
-            # pos_z data:
-            z_position = float(reader_obj[frame][column_num + 5])
-        except ValueError:
-            # time data:
-            time = float('NaN')
+                # pos_z data:
+                z_position = float(reader_obj[frame][column_num + 2])
+            except ValueError:
+                # time data:
+                time = float('NaN')
 
-            # rot_y data:
-            y_rotation = float('NaN')
+                # color data:
+                if marker_tag == highlight_tag:
+                    color = 'r'
+                elif ':' not in marker_tag:
+                    color = 'y'
+                else:
+                    color = 'b'
 
-            # pos_x data:
-            x_position = float('NaN')
+                # rot_y data:
+                y_rotation = float('NaN')
 
-            # pos_y data: 
-            y_position = float('NaN')
+                # pos_x data:
+                x_position = float('NaN')
 
-            # pos_z data:
-            z_position = float('NaN')
-        
-        data_frame.append(dict({'time': time,  'rot_y': y_rotation, 'pos_x': x_position, 'pos_y': y_position, 'pos_z': z_position}))
+                # pos_y data: 
+                y_position = float('NaN')
 
-    return data_frame
+                # pos_z data:
+                z_position = float('NaN')
+
+            data_frame.append(dict({'time': time, 'color': color, 'rot_y': y_rotation, 'pos_x': x_position, 'pos_y': y_position, 'pos_z': z_position}))
+    else:
+            
+            
+        for frame in list(range(7, data_length+7)):
+
+            try:
+                # time data:
+                time = float(reader_obj[frame][1])
+
+                # color data:
+                if marker_tag == highlight_tag:
+                    color = 'r'
+                elif ':' not in marker_tag:
+                    color = 'y'
+                else:
+                    color = 'b'
+
+                # rot_y data:
+                y_rotation = float(reader_obj[frame][column_num + 1])
+
+                # pos_x data:
+                x_position = float(reader_obj[frame][column_num + 3])
+
+                # pos_y data: 
+                y_position = float(reader_obj[frame][column_num + 4])
+
+                # pos_z data:
+                z_position = float(reader_obj[frame][column_num + 5])
+            except ValueError:
+                # time data:
+                time = float('NaN')
+
+                # color data:
+                if marker_tag == highlight_tag:
+                    color = 'r'
+                elif ':' not in marker_tag:
+                    color = 'y'
+                else:
+                    color = 'b'
+
+                # rot_y data:
+                y_rotation = float('NaN')
+
+                # pos_x data:
+                x_position = float('NaN')
+
+                # pos_y data: 
+                y_position = float('NaN')
+
+                # pos_z data:
+                z_position = float('NaN')
+            
+            data_frame.append(dict({'time': time, 'color': color, 'rot_y': y_rotation, 'pos_x': x_position, 'pos_y': y_position, 'pos_z': z_position}))
+
+
+    return data_frame, data_length
 
 path_to_csv = 'Take 2023-06-27 01.17.18 PM.csv'
-path_to_csv2 = 'Take 2023-06-27 01.24.14 PM.csv'
-marker_tags = ['Rigid Body 1:Marker1', 
-               'Rigid Body 1:Marker2', 
-               'Rigid Body 1:Marker3', 
-               'Rigid Body 1:Marker4', 
-               'Rigid Body 1:Marker5', 
-               'Rigid Body 1:Marker6',
-               'Rigid Body 2:Marker1', 
-               'Rigid Body 2:Marker2', 
-               'Rigid Body 2:Marker3', 
-               'Rigid Body 2:Marker4', 
-               'Rigid Body 2:Marker5', 
-               'Rigid Body 3:Marker1', 
-               'Rigid Body 3:Marker2', 
-               'Rigid Body 3:Marker3', 
-               'Rigid Body 3:Marker4', 
-               #'Rigid Body 3:Marker5'
-               ]
+path_to_csv2 = 'CSV MoCap Data/Take 2023-06-28 02.03.55 PM.csv'
+marker_tags = [
+                'Rigid Body 1', 'Rigid Body 2', 'Rigid Body 3',
+                'Rigid Body 1:Marker1',
+                'Rigid Body 1:Marker2', 
+                'Rigid Body 1:Marker3', 
+                'Rigid Body 1:Marker4', 
+                'Rigid Body 1:Marker5', 
+                'Rigid Body 1:Marker6', 
+                'Rigid Body 1:Marker7',
+                'Rigid Body 2:Marker1', 
+                'Rigid Body 2:Marker2', 
+                'Rigid Body 2:Marker3', 
+                'Rigid Body 2:Marker4', 
+                'Rigid Body 2:Marker5', 
+                'Rigid Body 2:Marker6', 
+                'Rigid Body 2:Marker7',
+                'Rigid Body 3:Marker1', 
+                'Rigid Body 3:Marker2', 
+                'Rigid Body 3:Marker3', 
+                'Rigid Body 3:Marker4', 
+                'Rigid Body 3:Marker5', 
+                'Rigid Body 3:Marker6',
+                ]
+link_end_markers_csv2 = [
+                        'Rigid Body 3:Marker6', 
+                        'Rigid Body 3:Marker2',
+                        'Rigid Body 2:Marker4', 
+                        'Rigid Body 1:Marker3'
+]
 
 rigid_bodies = {}
 for tag in marker_tags:
-    rigid_bodies[tag] = create_marker_data(path_to_csv2, tag)
-
+    rigid_bodies[tag], data_length = create_marker_data(path_to_csv2, tag, link_end_markers_csv2)
 
 #Working, but VERY slow
 # ### Graphing time!
 f = plot.figure(1)
-f.set_size_inches(18.5, 7)
+f.set_size_inches(10, 7)
 plot.clf()
+
 ax = f.add_subplot(1, 1, 1)
+plot.title(f"MoCap Post Processing from: .{path_to_csv2}")
+plot.xlabel("Z Postion (meters)")
+plot.ylabel("X Postion (meters)")
+
+
 plot.axis('equal')
 plot.box('on')
-ax.set_ylim(-2.5, 2.5)
-ax.set_xlim(-2.5, 2.5)
+ax.set_ylim(-0.75, 0.2)
+ax.set_xlim(-1, 1)
 
+
+video_data = []
 x = [] # is pos_z since mocap uses y as vertical axis
 y = [] # is pos_x to place the linkage how its expected (left to right motion)
-for i, body in enumerate(rigid_bodies):
-    x.append(rigid_bodies[body][0]['pos_z'])
-    y.append(rigid_bodies[body][0]['pos_x'])
+body_plots = []
+for body in rigid_bodies:
+    if any(center_of_mass == body for center_of_mass in ['Rigid Body 1', 'Rigid Body 2', 'Rigid Body 3']):
+        body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.', markersize=13))
+    else:
+        body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.'))
 
-body_plot = ax.plot(x, y, c='b', linestyle='', marker='.')
-plot.pause(0.00833333) # 1second/120fps
+linkage = ax.plot([rigid_bodies[ends][0]['pos_z'] for ends in link_end_markers_csv2], [rigid_bodies[ends][0]['pos_x'] for ends in link_end_markers_csv2], c='r')
 
-X = []
-Y = []
-for i in list(range(1, 3150)):
-    x = []
-    y = [] # is pos_z since mocap uses y as vertical axis
+plot.legend(['MoCap Sensor', 'MoCap Sensor at link end/start', 'MoCap Rigid Body Position (COM)'], loc='center right')
+legend = ax.get_legend()
+legend.legendHandles[0].set_color('blue')
+legend.legendHandles[1].set_color('red')
+legend.legendHandles[2].set_color('yellow')
 
+# video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
+# video_data[0] = video_data[0].reshape(f.canvas.get_width_height()[::-1] + (3,))
 
-    for body in rigid_bodies:
-         x.append(rigid_bodies[body][i]['pos_z'])
-         y.append(rigid_bodies[body][i]['pos_x'])
-    
-    X.append(x)
-    Y.append(y)
-    
+plot.draw() # 1second/120fps
 
-    #print(i, rigid_bodies['Rigid Body 3:Marker1'][i]['time'])
+#io_buf=io.BytesIO()
+#f.savefig(io_buf, format='raw')
+# io_buf.seek(0)
+# video_data.append(
+#     np.reshape(np.frombuffer(io_buf.getvalue(), dtype=np.uint8),
+#                 newshape=(int(f.bbox.bounds[3]), int(f.bbox.bounds[2]), -1))
+# )
+# io_buf.close()
 
-for i in list(range(1, 3150)):
+video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
+video_data[0] = video_data[0].reshape(f.canvas.get_width_height()[::-1] + (3,))
 
+for i in list(range(1, data_length-1)):
     print(i)
-
-    for i3 in range(0, len(body_plot)):
-        body_plot[i3].set_xdata(X[i])
-        body_plot[i3].set_ydata(Y[i])
-
-    plot.pause(0.001)
-
-
-'''
-
-The rigid body rotations captured by Mocap are garbage. 
-
-
-
-marker_tags = ['Rigid Body 1', 'Rigid Body 2', 'Rigid Body 3']
-
-rigid_bodies = {}
-for tag in marker_tags:
-    rigid_bodies[tag] = create_marker_data(path_to_csv, tag)
-
-### Graphing time!
-f = plot.figure(1)
-ax = f.add_subplot(1, 1, 1)
-plot.axis('equal')
-plot.box('on')
-ax.set_ylim(-2.5, 2.5)
-ax.set_xlim(-2.5, 2.5)
-
-x = []
-line_x = []
-y = [] # is pos_z since mocap uses y as vertical axis
-line_y = []
-for i, body in enumerate(rigid_bodies):
-    x.append(rigid_bodies[body][0]['pos_x'])
-    y.append(rigid_bodies[body][0]['pos_z'])
-
-    r = 0.15 # In meters
-    m = math.tan(rigid_bodies[body][0]['rot_y'])
-    x_diff = r/math.sqrt(1 + m**2)
-
-    y_diff = m * x_diff 
-
-    min_x = x[i] - x_diff
-    max_x = x[i] + x_diff
-
-    min_y = y[i] - y_diff
-    max_y = y[i] + y_diff
-
-    line_x.append(min_x)
-    line_x.append(max_x)
-
-    line_y.append(min_y)
-    line_y.append(max_y)
-
-    # Calculate line 
-
-# Make scatter of center of rigid bodies as listed by MoCap
-body_plot = ax.plot(x, y, c='b', marker='.', linestyle='')
-line_plot = ax.plot(line_x, line_y, c='k')
-
-
-for i in list(range(1, 2176)):
-    print(i)
-    x = []
-    y = [] # is pos_z since mocap uses y as vertical axis
-
-    line_x = []
-    line_y = []
-
-    for i2, body in enumerate(rigid_bodies):
-        x.append(rigid_bodies[body][i]['pos_x'])
-        y.append(rigid_bodies[body][i]['pos_z'])
-
-        r = 0.15 # In meters
-        m = math.tan(math.radians(rigid_bodies[body][0]['rot_y']))
-        x_diff = r/math.sqrt(1 + m**2)
-
-        min_x = x[i2] - x_diff
-        max_x = x[i2] + x_diff
-
-        min_y = y[i2] - y_diff
-        max_y = y[i2] + y_diff
-
-        line_x.append(min_x)
-        line_x.append(max_x)
-
-        line_y.append(min_y)
-        line_y.append(max_y)
-
+    for i2, (body_plot, body) in enumerate(zip(body_plots, rigid_bodies)):
+        for i3 in range(0, len(body_plot)):
+            body_plot[i3].set_xdata(rigid_bodies[body][i]['pos_z'])
+            body_plot[i3].set_ydata(rigid_bodies[body][i]['pos_x'])
     
-    for i3 in range(0, len(body_plot)):
-        body_plot[i3].set_xdata(x)
-        body_plot[i3].set_ydata(y)
+    for i2 in range(0, len(linkage)):
+        linkage[i2].set_xdata([rigid_bodies[ends][i]['pos_z'] for ends in link_end_markers_csv2])
+        linkage[i2].set_ydata([rigid_bodies[ends][i]['pos_x'] for ends in link_end_markers_csv2])
 
-        line_plot[i3].set_xdata(line_x)
-        line_plot[i3].set_ydata(line_y)
-    #print(i, rigid_bodies['Rigid Body 3:Marker1'][i]['time'])
-    plot.pause(0.001)
-'''
+
+    plot.draw()
+
+    video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
+    video_data[i] = video_data[i].reshape(f.canvas.get_width_height()[::-1] + (3,))
+
+
+
+height, width, layers = video_data[1].shape
+
+# Create a videowriter object and feed it the images in the video_data list
+video=cv2.VideoWriter('video.mp4', -1, 120, (width,height))
+for images in video_data:
+    video.write(images)
+
+cv2.destroyAllWindows()
+video.release()
+
 plot.show()

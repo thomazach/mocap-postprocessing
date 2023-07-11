@@ -225,6 +225,7 @@ def create_MoCap_Video(file_name,
         # Add the new frame to the list of frames
         video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
         video_data[i] = video_data[i].reshape(f.canvas.get_width_height()[::-1] + (3,))
+        video_data[i] = video_data[i][:,:,::-1]
     
     # Assemble the video
     height, width, layers = video_data[1].shape #? No idea from stackoverflow

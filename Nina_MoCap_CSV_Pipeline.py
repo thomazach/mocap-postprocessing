@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plot
 
 
-def create_marker_data(path_to_csv, marker_tag, highlight_tag=None):
+def create_marker_data(path_to_csv, marker_tag, highlight_tag, marker_color, highlight_color, rigid_body_color):
     '''
     Input: 
         path_to_csv:
@@ -46,11 +46,11 @@ def create_marker_data(path_to_csv, marker_tag, highlight_tag=None):
 
                 # color data:
                 if any(marker_tag == tag for tag in highlight_tag):
-                    color = 'r'
+                    color = highlight_color
                 elif ':' not in marker_tag:
-                    color = 'y'
+                    color = rigid_body_color
                 else:
-                    color = 'b'
+                    color = marker_color
 
                 # rot_y data:
                 y_rotation = float("NaN")
@@ -68,12 +68,13 @@ def create_marker_data(path_to_csv, marker_tag, highlight_tag=None):
                 time = float('NaN')
 
                 # color data:
-                if marker_tag == highlight_tag:
-                    color = 'r'
+                if any(marker_tag == tag for tag in highlight_tag):
+                    color = highlight_color
                 elif ':' not in marker_tag:
-                    color = 'y'
+                    color = rigid_body_color
                 else:
-                    color = 'b'
+                    color = marker_color
+
 
                 # rot_y data:
                 y_rotation = float('NaN')
@@ -97,13 +98,13 @@ def create_marker_data(path_to_csv, marker_tag, highlight_tag=None):
                 # time data:
                 time = float(reader_obj[frame][1])
 
-                # color data:
-                if marker_tag == highlight_tag:
-                    color = 'r'
+                ## color data:
+                if any(marker_tag == tag for tag in highlight_tag):
+                    color = highlight_color
                 elif ':' not in marker_tag:
-                    color = 'y'
+                    color = rigid_body_color
                 else:
-                    color = 'b'
+                    color = marker_color
 
                 # rot_y data:
                 y_rotation = float(reader_obj[frame][column_num + 1])
@@ -121,12 +122,13 @@ def create_marker_data(path_to_csv, marker_tag, highlight_tag=None):
                 time = float('NaN')
 
                 # color data:
-                if marker_tag == highlight_tag:
-                    color = 'r'
+                if any(marker_tag == tag for tag in highlight_tag):
+                    color = highlight_color
                 elif ':' not in marker_tag:
-                    color = 'y'
+                    color = rigid_body_color
                 else:
-                    color = 'b'
+                    color = marker_color
+
 
                 # rot_y data:
                 y_rotation = float('NaN')
@@ -150,13 +152,13 @@ def create_MoCap_Video(file_name,
                        start_end_links_tags, 
                        Range=[-0.75, 0.2], 
                        domain=[-1, 1],
-                       fps=120
-):
+                       fps=120,
+                       marker_color='#606060', highlight_color='#000000', rigid_body_color='#330000'):
 
     ### Call the create marker data function to create a dictionary database
     rigid_bodies = {}
     for tag in marker_tags:
-        rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags)
+        rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, marker_color, highlight_color, rigid_body_color)
     
     ### Graphing
     f = plot.figure(1)
@@ -186,13 +188,13 @@ def create_MoCap_Video(file_name,
         else:
             body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.'))
 
-    linkage = ax.plot([rigid_bodies[ends][0]['pos_z'] for ends in start_end_links_tags], [rigid_bodies[ends][0]['pos_x'] for ends in start_end_links_tags], c='r')
+    linkage = ax.plot([rigid_bodies[ends][0]['pos_z'] for ends in start_end_links_tags], [rigid_bodies[ends][0]['pos_x'] for ends in start_end_links_tags], c=highlight_color)
 
     plot.legend(['MoCap Sensor', 'MoCap Sensor at link end/start', 'MoCap Rigid Body Position (COM)'], loc='lower right')
     legend = ax.get_legend()
-    legend.legend_handles[0].set_color('blue')
-    legend.legend_handles[1].set_color('red')
-    legend.legend_handles[2].set_color('yellow')
+    legend.legend_handles[0].set_color(marker_color)
+    legend.legend_handles[1].set_color(highlight_color)
+    legend.legend_handles[2].set_color(rigid_body_color)
 
     plot.draw() # Draw so that we can save each frame as an image
 

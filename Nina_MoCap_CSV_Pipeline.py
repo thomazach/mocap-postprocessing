@@ -153,7 +153,7 @@ def create_MoCap_Video(file_name,
                        Range=[-0.75, 0.2], 
                        domain=[-1, 1],
                        fps=120,
-                       marker_color='#606060', highlight_color='#000000', rigid_body_color='#330000'):
+                       marker_color='#606060', highlight_color='#000000', rigid_body_color='#FF0000', do_system_COM=False):
 
     ### Call the create marker data function to create a dictionary database
     rigid_bodies = {}
@@ -177,8 +177,6 @@ def create_MoCap_Video(file_name,
     ax.set_xlim(domain[0], domain[1])
 
     video_data = [] # Stores sequenced image data
-    x = [] # is pos_z since mocap uses y as vertical axis
-    y = [] # is pos_x to place the linkage how its expected (left to right motion)
     body_plots = []
 
     # Dont ask, i hate matplotlib
@@ -276,4 +274,4 @@ start_end_links_tags = [
 ]
 
 ### Function Call ###
-create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags) # Creates video with specifications in directory shared with this file
+create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True) # Creates video with specifications in directory shared with this file

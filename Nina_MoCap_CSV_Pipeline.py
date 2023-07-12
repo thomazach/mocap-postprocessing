@@ -159,7 +159,23 @@ def create_MoCap_Video(file_name,
     rigid_bodies = {}
     for tag in marker_tags:
         rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, marker_color, highlight_color, rigid_body_color)
-    
+
+    links_rigid_body = []
+    for tag in marker_tags:
+        if not ':' in tag:
+            links_rigid_body.append(tag)
+
+    COM_cords = []
+    for i in list(range(0, data_length - 1)):
+        COM_x = []
+        COM_y = []
+        for link_tag in links_rigid_body:
+           COM_x.append(rigid_bodies[link_tag][i]['pos_z'])
+           COM_y.append(rigid_bodies[link_tag][i]['pos_x'])
+        center_of_mass_x = sum(COM_x) / len(links_rigid_body)
+        center_of_mass_y = sum(COM_y) / len(links_rigid_body)
+        COM_cords.append([center_of_mass_x, center_of_mass_y])
+
     ### Graphing
     f = plot.figure(1)
     f.set_size_inches(10, 7)
@@ -169,7 +185,6 @@ def create_MoCap_Video(file_name,
     plot.title(f"MoCap Post Processing from: .{path_to_csv}")
     plot.xlabel("Z Postion (meters)")
     plot.ylabel("X Postion (meters)")
-
 
     plot.axis('equal')
     plot.box('on')
@@ -186,6 +201,7 @@ def create_MoCap_Video(file_name,
         else:
             body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.'))
 
+    ax.plot(COM_cords[0][0], COM_cords[0][1], c='#FF0000', marker='.', markersize=3)
     linkage = ax.plot([rigid_bodies[ends][0]['pos_z'] for ends in start_end_links_tags], [rigid_bodies[ends][0]['pos_x'] for ends in start_end_links_tags], c=highlight_color)
 
     plot.legend(['MoCap Sensor', 'MoCap Sensor at link end/start', 'MoCap Rigid Body Position (COM)'], loc='lower right')
@@ -194,7 +210,8 @@ def create_MoCap_Video(file_name,
     legend.legend_handles[1].set_color(highlight_color)
     legend.legend_handles[2].set_color(rigid_body_color)
 
-    plot.draw() # Draw so that we can save each frame as an image
+    # Draw so that we can save each frame as an image
+    plot.draw()
 
     # Store first frame of video
     video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
@@ -219,6 +236,8 @@ def create_MoCap_Video(file_name,
         for i2 in range(0, len(linkage)):
             linkage[i2].set_xdata([rigid_bodies[ends][i]['pos_z'] for ends in start_end_links_tags])
             linkage[i2].set_ydata([rigid_bodies[ends][i]['pos_x'] for ends in start_end_links_tags])
+
+        ax.plot(COM_cords[i][0], COM_cords[i][1], c='#FF0000', marker='.', markersize=3)
 
         plot.draw() # Update the matplotlib figure
 

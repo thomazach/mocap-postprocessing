@@ -155,6 +155,52 @@ def create_MoCap_Video(file_name,
                        fps=120,
                        marker_color='#606060', highlight_color='#000000', rigid_body_color='#FF0000', do_system_COM=False):
 
+    '''
+    Outputs a video file of the specified format in the same directory as this file. Blocks for a long time, python be like that. 
+
+    Inputs:
+        filename:
+            String: Name of the video you want to create. Be sure to include a file type in the string.
+            Example: "sample_csv_data.mp4"
+        path_to_csv:
+            String: /path/to/data.csv   Absolute file path recommended.
+        marker_tags:
+            List of strings: The names of each motion sensor or rigid body. 
+                            Example:
+                                marker_tags = [ 
+                                    'Rigid Body 1', 
+                                    'Rigid Body 2', 
+                                    'Rigid Body 3',
+                                    'Rigid Body 1:Marker1',
+                                    'Rigid Body 1:Marker4',
+                                    'Rigid Body 2:Marker1', 
+                                    'Rigid Body 2:Marker2', 
+                                    'Rigid Body 3:Marker5', 
+                                    'Rigid Body 3:Marker6'
+                                ]
+        start_end_links_tags:
+            List of strings: The names of the markers which will be highlighted and connected by a line. Same format as marker_tags. 
+                             The list is order sensitive, the lines are drawn in the order they appear in the array
+    Optional Inputs (In order of importance):
+        Range:
+            List of floats: Default is [-0.75, 0.2]. Controls the size of the y axis in matplotlib. Use to fit the system in the displayed axis. Defualt units are in meters.
+        domain:
+            List of floats: Default is [-1, 1]. Controls the size of the y axis in matplotlib. Use to fit the system in the displayed axis. Defualt units are in meters
+        do_system_COM:
+            bool: Graphs the system's approximate center of mass if true.
+        fps:
+            int: The fps at which the animation will play. If this argument equals the fps of the motion capture software, the animation speed will be the same as real life.
+                 Changing it can be used for scuffed slowmo / timelapse
+        marker_color:
+            Color of any non-special motion cap sensor. Can be any matplotlib compatible color input.
+        highlight_color:
+            Color of sensors specifed in start_end_links_tags. Can be any matplotlib compatible color input.
+        rigid_body_color:
+            Color of the center of masses displayed at the links, and the system center of mass if it is drawn.
+        
+        If color outputs are left unspecified, they will default to colors that are mostly conventional with LRAM linkage visualizations. 
+
+    '''
     ### Call the create marker data function to create a dictionary database
     rigid_bodies = {}
     for tag in marker_tags:
@@ -165,16 +211,17 @@ def create_MoCap_Video(file_name,
         if not ':' in tag:
             links_rigid_body.append(tag)
 
-    COM_cords = []
-    for i in list(range(0, data_length - 1)):
-        COM_x = []
-        COM_y = []
-        for link_tag in links_rigid_body:
-           COM_x.append(rigid_bodies[link_tag][i]['pos_z'])
-           COM_y.append(rigid_bodies[link_tag][i]['pos_x'])
-        center_of_mass_x = sum(COM_x) / len(links_rigid_body)
-        center_of_mass_y = sum(COM_y) / len(links_rigid_body)
-        COM_cords.append([center_of_mass_x, center_of_mass_y])
+    if do_system_COM:
+        COM_cords = []
+        for i in list(range(0, data_length - 1)):
+            COM_x = []
+            COM_y = []
+            for link_tag in links_rigid_body:
+                COM_x.append(rigid_bodies[link_tag][i]['pos_z'])
+                COM_y.append(rigid_bodies[link_tag][i]['pos_x'])
+                center_of_mass_x = sum(COM_x) / len(links_rigid_body)
+                center_of_mass_y = sum(COM_y) / len(links_rigid_body)
+                COM_cords.append([center_of_mass_x, center_of_mass_y])
 
     ### Graphing
     f = plot.figure(1)
@@ -201,8 +248,10 @@ def create_MoCap_Video(file_name,
         else:
             body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.'))
 
-    ax.plot(COM_cords[0][0], COM_cords[0][1], c='#FF0000', marker='.', markersize=3)
     linkage = ax.plot([rigid_bodies[ends][0]['pos_z'] for ends in start_end_links_tags], [rigid_bodies[ends][0]['pos_x'] for ends in start_end_links_tags], c=highlight_color)
+
+    if do_system_COM:
+        ax.plot(COM_cords[0][0], COM_cords[0][1], c='#FF0000', marker='.', markersize=3)
 
     plot.legend(['MoCap Sensor', 'MoCap Sensor at link end/start', 'MoCap Rigid Body Position (COM)'], loc='lower right')
     legend = ax.get_legend()
@@ -237,7 +286,8 @@ def create_MoCap_Video(file_name,
             linkage[i2].set_xdata([rigid_bodies[ends][i]['pos_z'] for ends in start_end_links_tags])
             linkage[i2].set_ydata([rigid_bodies[ends][i]['pos_x'] for ends in start_end_links_tags])
 
-        ax.plot(COM_cords[i][0], COM_cords[i][1], c='#FF0000', marker='.', markersize=3)
+        if do_system_COM:
+            ax.plot(COM_cords[i][0], COM_cords[i][1], c='#FF0000', marker='.', markersize=3)
 
         plot.draw() # Update the matplotlib figure
 

@@ -7,7 +7,6 @@ warnings.filterwarnings("ignore")
 import numpy as np
 from matplotlib import pyplot as plot
 
-
 def create_marker_data(path_to_csv, marker_tag, highlight_tag, marker_color, highlight_color, rigid_body_color):
     '''
     Input: 
@@ -187,7 +186,7 @@ def create_MoCap_Video(file_name,
         domain:
             List of floats: Default is [-1, 1]. Controls the size of the y axis in matplotlib. Use to fit the system in the displayed axis. Defualt units are in meters
         do_system_COM:
-            bool: Graphs the system's approximate center of mass if true.
+            bool: Graphs the system's approximate center of mass if true. WARNING: This makes the graphing take a SUPER long time, since showing a trail involves plotting THOUSANDS OF POINTS PER FRAME for later frames
         fps:
             int: The fps at which the animation will play. If this argument equals the fps of the motion capture software, the animation speed will be the same as real life.
                  Changing it can be used for scuffed slowmo / timelapse
@@ -219,9 +218,9 @@ def create_MoCap_Video(file_name,
             for link_tag in links_rigid_body:
                 COM_x.append(rigid_bodies[link_tag][i]['pos_z'])
                 COM_y.append(rigid_bodies[link_tag][i]['pos_x'])
-                center_of_mass_x = sum(COM_x) / len(links_rigid_body)
-                center_of_mass_y = sum(COM_y) / len(links_rigid_body)
-                COM_cords.append([center_of_mass_x, center_of_mass_y])
+            center_of_mass_x = sum(COM_x) / len(links_rigid_body)
+            center_of_mass_y = sum(COM_y) / len(links_rigid_body)
+            COM_cords.append([center_of_mass_x, center_of_mass_y])
 
     ### Graphing
     f = plot.figure(1)
@@ -243,7 +242,7 @@ def create_MoCap_Video(file_name,
 
     # Dont ask, i hate matplotlib
     for body in rigid_bodies:
-        if any(center_of_mass == body for center_of_mass in ['Rigid Body 1', 'Rigid Body 2', 'Rigid Body 3']):
+        if any(center_of_mass == body for center_of_mass in links_rigid_body):
             body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.', markersize=13))
         else:
             body_plots.append(ax.plot(rigid_bodies[body][0]['pos_z'], rigid_bodies[body][0]['pos_x'], c=rigid_bodies[body][0]['color'], linestyle='', marker='.'))
@@ -251,7 +250,7 @@ def create_MoCap_Video(file_name,
     linkage = ax.plot([rigid_bodies[ends][0]['pos_z'] for ends in start_end_links_tags], [rigid_bodies[ends][0]['pos_x'] for ends in start_end_links_tags], c=highlight_color)
 
     if do_system_COM:
-        ax.plot(COM_cords[0][0], COM_cords[0][1], c='#FF0000', marker='.', markersize=3)
+        ax.plot(COM_cords[0][0], COM_cords[0][1], c=rigid_body_color, marker='.', markersize=3)
 
     plot.legend(['MoCap Sensor', 'MoCap Sensor at link end/start', 'MoCap Rigid Body Position (COM)'], loc='lower right')
     legend = ax.get_legend()
@@ -269,13 +268,10 @@ def create_MoCap_Video(file_name,
     print("Generating")
     for i in list(range(1, data_length-1)):
 
-        alive = i % 500
+        alive = i % 100
         if alive == 0:
-            print("")
-            print("Generating", end=" ")
+            print(f"Progress: %{i/data_length * 100:.1f}")
         
-        if i % 85 == 0:
-            print(".", end=" ")
 
         for i2, (body_plot, body) in enumerate(zip(body_plots, rigid_bodies)):
             for i3 in range(0, len(body_plot)):
@@ -287,7 +283,7 @@ def create_MoCap_Video(file_name,
             linkage[i2].set_ydata([rigid_bodies[ends][i]['pos_x'] for ends in start_end_links_tags])
 
         if do_system_COM:
-            ax.plot(COM_cords[i][0], COM_cords[i][1], c='#FF0000', marker='.', markersize=3)
+            ax.plot(COM_cords[i][0], COM_cords[i][1], c=rigid_body_color, marker='.', markersize=3)
 
         plot.draw() # Update the matplotlib figure
 
@@ -307,40 +303,44 @@ def create_MoCap_Video(file_name,
     cv2.destroyAllWindows()
     video.release()
 
-###      Example Inputs      ###
-file_name = '6-28-23 02.03.29 PM MoCapVideo.mp4'
-path_to_csv = 'CSV MoCap Data/Take 2023-06-28 02.03.29 PM.csv'
-marker_tags = [ 
-    'Rigid Body 1', 
-    'Rigid Body 2', 
-    'Rigid Body 3',
-    'Rigid Body 1:Marker1',
-    'Rigid Body 1:Marker2', 
-    'Rigid Body 1:Marker3', 
-    'Rigid Body 1:Marker4', 
-    'Rigid Body 1:Marker5', 
-    'Rigid Body 1:Marker6', 
-    'Rigid Body 1:Marker7',
-    'Rigid Body 2:Marker1', 
-    'Rigid Body 2:Marker2', 
-    'Rigid Body 2:Marker3', 
-    'Rigid Body 2:Marker4', 
-    'Rigid Body 2:Marker5', 
-    'Rigid Body 2:Marker6', 
-    'Rigid Body 2:Marker7',
-    'Rigid Body 3:Marker1', 
-    'Rigid Body 3:Marker2', 
-    'Rigid Body 3:Marker3', 
-    'Rigid Body 3:Marker4', 
-    'Rigid Body 3:Marker5', 
-    'Rigid Body 3:Marker6'
-]
-start_end_links_tags = [
-    'Rigid Body 3:Marker6', 
-    'Rigid Body 3:Marker2',
-    'Rigid Body 2:Marker4', 
-    'Rigid Body 1:Marker3'
-]
+def main():
+    ###      Example Inputs      ###
+    file_name = 'COM_TRUE_FULL_TEST.mp4'
+    path_to_csv = 'CSV MoCap Data/Take 2023-06-28 02.03.29 PM.csv'
+    marker_tags = [ 
+        'Rigid Body 1', 
+        'Rigid Body 2', 
+        'Rigid Body 3',
+        'Rigid Body 1:Marker1',
+        'Rigid Body 1:Marker2', 
+        'Rigid Body 1:Marker3', 
+        'Rigid Body 1:Marker4', 
+        'Rigid Body 1:Marker5', 
+        'Rigid Body 1:Marker6', 
+        'Rigid Body 1:Marker7',
+        'Rigid Body 2:Marker1', 
+        'Rigid Body 2:Marker2', 
+        'Rigid Body 2:Marker3', 
+        'Rigid Body 2:Marker4', 
+        'Rigid Body 2:Marker5', 
+        'Rigid Body 2:Marker6', 
+        'Rigid Body 2:Marker7',
+        'Rigid Body 3:Marker1', 
+        'Rigid Body 3:Marker2', 
+        'Rigid Body 3:Marker3', 
+        'Rigid Body 3:Marker4', 
+        'Rigid Body 3:Marker5', 
+        'Rigid Body 3:Marker6'
+    ]
+    start_end_links_tags = [
+        'Rigid Body 3:Marker6', 
+        'Rigid Body 3:Marker2',
+        'Rigid Body 2:Marker4', 
+        'Rigid Body 1:Marker3'
+    ]
 
-### Function Call ###
-create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True) # Creates video with specifications in directory shared with this file
+    ### Function Call ###
+    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True) # Creates video with specifications in directory shared with this file
+
+if __name__ == "__main__":
+    main()

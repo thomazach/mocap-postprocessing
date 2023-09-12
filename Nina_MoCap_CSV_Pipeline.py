@@ -305,7 +305,7 @@ def create_MoCap_Video(file_name,
 
 def main():
     ###      Example Inputs      ###
-    file_name = 'COM_TRUE_FULL_TEST.mp4'
+    file_name = 'video_motion_capture.mp4'
     path_to_csv = 'CSV MoCap Data/Take 2023-06-28 02.03.29 PM.csv'
     marker_tags = [ 
         'Rigid Body 1', 
@@ -340,7 +340,7 @@ def main():
     ]
 
     ### Function Call ###
-    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True) # Creates video with specifications in directory shared with this file
+    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=False) # Creates video with specifications in directory shared with this file
 
 if __name__ == "__main__":
     main()

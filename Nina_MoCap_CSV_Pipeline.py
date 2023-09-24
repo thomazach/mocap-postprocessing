@@ -17,6 +17,9 @@ def get_all_marker_tags(path_to_csv):
         if (marker_name not in marker_tags) and ("Unlabeled" not in marker_name):
             marker_tags.append(marker_name)
     
+    while("" in marker_tags):
+        marker_tags.remove("")
+    
     return marker_tags
 
 
@@ -319,7 +322,7 @@ def create_MoCap_Video(file_name,
 def main():
     ###      Example Inputs      ###
     file_name = 'video_motion_capture.mp4'
-    path_to_csv = 'CSV MoCap Data/Take 2023-06-28 02.03.29 PM.csv'
+    path_to_csv = 'CSV MoCap Data\Take_2023-07-06_12.25.47_AM.csv'
 
     start_end_links_tags = [
         'Rigid Body 3:Marker6', 

@@ -7,6 +7,19 @@ warnings.filterwarnings("ignore")
 import numpy as np
 from matplotlib import pyplot as plot
 
+def get_all_marker_tags(path_to_csv):
+    # Takes in csv file path, returns a list of all unique marker tags
+    with open(path_to_csv, newline='') as f:
+        reader_obj = list(csv.reader(f))
+    
+    marker_tags = []
+    for marker_name in reader_obj[3]:
+        if (marker_name not in marker_tags) and ("Unlabeled" not in marker_name):
+            marker_tags.append(marker_name)
+    
+    return marker_tags
+
+
 def create_marker_data(path_to_csv, marker_tag, highlight_tag, marker_color, highlight_color, rigid_body_color):
     '''
     Input: 
@@ -307,39 +320,16 @@ def main():
     ###      Example Inputs      ###
     file_name = 'video_motion_capture.mp4'
     path_to_csv = 'CSV MoCap Data/Take 2023-06-28 02.03.29 PM.csv'
-    marker_tags = [ 
-        'Rigid Body 1', 
-        'Rigid Body 2', 
-        'Rigid Body 3',
-        'Rigid Body 1:Marker1',
-        'Rigid Body 1:Marker2', 
-        'Rigid Body 1:Marker3', 
-        'Rigid Body 1:Marker4', 
-        'Rigid Body 1:Marker5', 
-        'Rigid Body 1:Marker6', 
-        'Rigid Body 1:Marker7',
-        'Rigid Body 2:Marker1', 
-        'Rigid Body 2:Marker2', 
-        'Rigid Body 2:Marker3', 
-        'Rigid Body 2:Marker4', 
-        'Rigid Body 2:Marker5', 
-        'Rigid Body 2:Marker6', 
-        'Rigid Body 2:Marker7',
-        'Rigid Body 3:Marker1', 
-        'Rigid Body 3:Marker2', 
-        'Rigid Body 3:Marker3', 
-        'Rigid Body 3:Marker4', 
-        'Rigid Body 3:Marker5', 
-        'Rigid Body 3:Marker6'
-    ]
+
     start_end_links_tags = [
         'Rigid Body 3:Marker6', 
         'Rigid Body 3:Marker2',
         'Rigid Body 2:Marker4', 
         'Rigid Body 1:Marker3'
     ]
-
     ### Function Call ###
+    marker_tags = get_all_marker_tags(path_to_csv)
+    print(f"{marker_tags=}")
     create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=False) # Creates video with specifications in directory shared with this file
 
 if __name__ == "__main__":

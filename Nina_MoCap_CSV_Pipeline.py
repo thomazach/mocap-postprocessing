@@ -325,11 +325,12 @@ def main():
     path_to_csv = 'CSV MoCap Data\Take_2023-07-06_12.25.47_AM.csv'
 
     start_end_links_tags = [
-        'Rigid Body 3:Marker6', 
-        'Rigid Body 3:Marker2',
-        'Rigid Body 2:Marker4', 
-        'Rigid Body 1:Marker3'
+        'Rigid Body 3:Marker4', 
+        'Rigid Body 3:Marker3',
+        'Rigid Body 2:Marker3', 
+        'Rigid Body 1:Marker4'
     ]
+    
     ### Function Call ###
     marker_tags = get_all_marker_tags(path_to_csv)
     print(f"{marker_tags=}")

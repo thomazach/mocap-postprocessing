@@ -1,6 +1,7 @@
 import csv
 import cv2
 import matplotlib
+import math
 matplotlib.use('agg')
 import warnings
 warnings.filterwarnings("ignore")
@@ -160,6 +161,72 @@ def create_marker_data(path_to_csv, marker_tag, highlight_tag, marker_color, hig
             data_frame.append(dict({'time': time, 'color': color, 'rot_y': y_rotation, 'pos_x': x_position, 'pos_y': y_position, 'pos_z': z_position}))
 
     return data_frame, data_length
+
+def createJointAngles(rigidBodyDict, startEndPoints, writeToTxt=False, filename=None):
+    '''
+    Inputs:
+        rigidBodyDict:
+            Dictionary who's keys are the names of motion capture markers, and whos data is a data_frame returned by create_marker_data
+
+        startEndPoints:
+            List of strings, where each string is the name of a motion capture marker. It is important that the names of the markers in this order:
+            Entry 0 --> the name of the marker at the start of the first link
+            Entry 1 through n-1 --> the name of a marker on top of a joint. These should be in sequential order, so the joint closest to the start of the first link should be 1, and so on
+            Entry n --> the name of the marker at the end of the last link
+        
+        writeToTxt: (Optional)
+            Bool that if true tells this function to write the joint angles to a csv text file
+
+    Output:
+        jointAngleData:
+            A list of lists, the second dimension has with n-1 elements, n-2 of which are joint angles. Element 0 is the time recorded by the motion capture, 
+            and all following elements are joint angles where the element number corresponds to the number of the joint. 
+
+    Notes:
+        The write to text file feature is currently not implemented
+    '''
+
+    frameNumber = 0
+    jointAngleData = []
+    while frameNumber < len(rigidBodyDict[startEndPoints[0]]):
+        idx = 0
+        jointAngles = []
+        while idx < len(startEndPoints) - 2:
+            # In the mocap coordinates the x axis is what most linkage modeling and sysplotter considers to be the y axis.
+            # The z coordinates are usually considered x coordinates in most LRAM modeling.
+            deltaY1 = rigidBodyDict[startEndPoints[idx+1]][frameNumber]['pos_x'] - rigidBodyDict[startEndPoints[idx]][frameNumber]['pos_x']
+            deltaX1 = rigidBodyDict[startEndPoints[idx+1]][frameNumber]['pos_z'] - rigidBodyDict[startEndPoints[idx]][frameNumber]['pos_z']
+
+            deltaY2 = rigidBodyDict[startEndPoints[idx+2]][frameNumber]['pos_x'] - rigidBodyDict[startEndPoints[idx+1]][frameNumber]['pos_x']
+            deltaX2 = rigidBodyDict[startEndPoints[idx+2]][frameNumber]['pos_z'] - rigidBodyDict[startEndPoints[idx+1]][frameNumber]['pos_z']
+
+            jointAngles.append(math.atan2(deltaX1*deltaY2 - deltaY1*deltaX2, deltaX1*deltaX2 + deltaY1*deltaY2))
+
+            idx += 1
+
+        jointAngleData.append([rigidBodyDict[startEndPoints[0]][frameNumber]['time']] + jointAngles)
+
+        frameNumber += 1
+
+    if writeToTxt:
+
+        if filename == None:
+            raise("Missing required argument for the writeToTxt = True option: filename=None")
+        
+        csvHeader = ['Time']
+        while idx < len(startEndPoints) - 2:
+            csvHeader.append('Joint Angle ' + str(idx + 1))
+        
+        with open(filename + '.csv', 'w') as f:
+            csvwriter = csv.writer(f)
+
+            csvwriter.writerow(csvHeader)
+
+            csvwriter.writerows(jointAngleData)
+
+    
+    return jointAngleData
+
 
 def create_MoCap_Video(file_name, 
                        path_to_csv, 
@@ -321,20 +388,29 @@ def create_MoCap_Video(file_name,
 
 def main():
     ###      Example Inputs      ###
-    file_name = 'video_motion_capture.mp4'
-    path_to_csv = 'CSV MoCap Data\Take_2023-07-06_12.25.47_AM.csv'
+    file_name = 'find_link_ends.mp4'
+    path_to_csv = 'CSV MoCap Data\Take 2023-09-18 12.49.02 AM.csv'
 
     start_end_links_tags = [
+
+        'Rigid Body 3:Marker5',
         'Rigid Body 3:Marker4', 
-        'Rigid Body 3:Marker3',
-        'Rigid Body 2:Marker3', 
-        'Rigid Body 1:Marker4'
+        'Rigid Body 2:Marker3',
+        'Rigid Body 1:Marker1', 
+
     ]
+
     
     ### Function Call ###
     marker_tags = get_all_marker_tags(path_to_csv)
     print(f"{marker_tags=}")
-    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=False) # Creates video with specifications in directory shared with this file
+    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True) # Creates video with specifications in directory shared with this file
 
+    # Calculate joint angles (2D) and store them to a .csv file
+    rigid_bodies = {}
+    for tag in marker_tags:
+        rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, '#606060', '#000000', '#FF0000')
+    jointData = createJointAngles(rigid_bodies, start_end_links_tags, writeToTxt=True, filename="first_test") # jointData contains the information that was written to the text file
+    
 if __name__ == "__main__":
     main()

@@ -477,10 +477,10 @@ def main():
     create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True, domain=[-1.2, 1]) # Creates video with specifications in directory shared with this file
 
     # Calculate joint angles (2D) and store them to a .csv file
-    #rigid_bodies = {}
-    #for tag in marker_tags:
-    #    rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, '#606060', '#000000', '#FF0000')
-    #jointData = createJointAngles(rigid_bodies, start_end_links_tags, writeToTxt=True, filename="Joint Angles Take 2023-09-18 12.48.19 AM") # jointData contains the information that was written to the text file
+    rigid_bodies = {}
+    for tag in marker_tags:
+        rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, '#606060', '#000000', '#FF0000')
+    jointData = createJointAngles(rigid_bodies, start_end_links_tags, writeToTxt=True, filename="Joint Angles Take 2023-09-18 12.48.19 AM") # jointData contains the information that was written to the text file
     
 if __name__ == "__main__":
     main()

@@ -2,7 +2,6 @@ import csv
 import cv2
 import matplotlib
 import math
-matplotlib.use('agg')
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
@@ -227,7 +226,6 @@ def createJointAngles(rigidBodyDict, startEndPoints, writeToTxt=False, filename=
     
     return jointAngleData
 
-
 def create_MoCap_Video(file_name, 
                        path_to_csv, 
                        marker_tags, 
@@ -283,6 +281,9 @@ def create_MoCap_Video(file_name,
         If color outputs are left unspecified, they will default to colors that are mostly conventional with LRAM linkage visualizations. 
 
     '''
+    # Turn off UI for actual video render
+
+    matplotlib.use('agg')
     ### Call the create marker data function to create a dictionary database
     rigid_bodies = {}
     for tag in marker_tags:
@@ -344,9 +345,16 @@ def create_MoCap_Video(file_name,
     # Draw so that we can save each frame as an image
     plot.draw()
 
+
     # Store first frame of video
-    video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
-    video_data[0] = video_data[0].reshape(f.canvas.get_width_height()[::-1] + (3,))
+    video_data = np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8)
+    video_data = video_data.reshape(f.canvas.get_width_height()[::-1] + (3,))
+    video_data = video_data[:,:,::-1]
+
+    # Create video object
+    height, width, layers = video_data.shape
+    video=cv2.VideoWriter(file_name, -1, fps, (width,height))
+    video.write(video_data)
 
     print("Generating")
     for i in list(range(1, data_length-1)):
@@ -370,47 +378,109 @@ def create_MoCap_Video(file_name,
 
         plot.draw() # Update the matplotlib figure
 
-        # Add the new frame to the list of frames
-        video_data.append(np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8))
-        video_data[i] = video_data[i].reshape(f.canvas.get_width_height()[::-1] + (3,))
-        video_data[i] = video_data[i][:,:,::-1]
+        # Create the new frame
+        video_data = np.frombuffer(f.canvas.tostring_rgb(), dtype=np.uint8)
+        video_data = video_data.reshape(f.canvas.get_width_height()[::-1] + (3,))
+        video_data = video_data[:,:,::-1]
+        video.write(video_data)
     
-    # Assemble the video
-    height, width, layers = video_data[1].shape #? No idea from stackoverflow
-
-    # Create a videowriter object and feed it the images in the video_data list
-    video=cv2.VideoWriter(file_name, -1, fps, (width,height))
-    for images in video_data:
-        video.write(images)
-
     cv2.destroyAllWindows()
     video.release()
 
+def selectStartEndLinkTags(path_to_csv):
+    print("""Instructions:
+           1. Make sure to choose an entry/frame in the csv where all markers are visable
+           2. When selecting marker names, select them in the order you want lines to be drawn between them, otherwise
+              the linkage will not be drawn from tail -> joint -> joint -> head.
+           3. You will have the option to cycle through the markers multiple times, so the system will still work
+               even if the markers are displayed in an order that makes it impossible to draw in one cycle""")
+    marker_tags = get_all_marker_tags(path_to_csv)
+    data_frame = {}
+    for tag in marker_tags:
+        data_frame[tag], data_length = create_marker_data(path_to_csv, tag, '', '#606060', '#000000', '#FF0000')
+
+    f = plot.figure(1)
+    f.set_size_inches(10, 7)
+    plot.clf()
+
+    ax = f.add_subplot(1, 1, 1)
+    plot.axis('equal')
+    plot.box('on')
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+
+    
+    # Create scatter object at initial frame but don't draw it yet, so that user can choose a frame 
+    # in which all markers exist/are plotable
+    points = []
+    for marker in data_frame:
+            points += [ax.scatter(data_frame[marker][0]['pos_z'], data_frame[marker][0]['pos_x'], label=marker, color='k')]
+    
+    run = True
+    print(f"The number of frames in the specified csv file is {data_length}")
+    while run:
+        frame = int(input("Enter an integer to specify the frame used for selection: "))
+        for point, marker in zip(points, data_frame):
+            point.set_offsets([[data_frame[marker][frame]['pos_z'], data_frame[marker][frame]['pos_x']]])
+        
+        plot.draw()
+        plot.pause(0.01)
+
+        print(f"Number of markers in the csv file: {len(marker_tags)}")
+
+        response = input("Would you like to choose a new frame/time in the motion capture for your selection? (y/n)")
+        if response.lower() == "n":
+            run = False
+            break
+
+
+    start_end_links_tags = []
+    run = True
+    while run:
+        for point, key in zip(points, data_frame.keys()):
+            point.set_facecolors(['red'])
+            plot.draw()
+            plot.pause(0.001)
+            response = input(f"Highlighted marker with name: {key} Would you like to use this marker to draw the linkage? (y/n)")
+            if response.lower() == "y":
+                start_end_links_tags += [key]
+
+            point.set_facecolors(['black'])
+        
+        response = input("Cycle through tags again? (y/n) ")
+        if response.lower() == "n":
+            run = False
+            break
+
+    return start_end_links_tags
+
 def main():
     ###      Example Inputs      ###
-    file_name = 'find_link_ends.mp4'
-    path_to_csv = 'CSV MoCap Data\Take 2023-09-18 12.49.02 AM.csv'
 
-    start_end_links_tags = [
+    file_name = 'TestWithShortVideo.mp4'
+    path_to_csv = 'D:\LRAM\salp-post-processing\CSV MoCap Data\Archive\Take 2023-06-28 02.03.55 PM.csv'
 
-        'Rigid Body 3:Marker5',
-        'Rigid Body 3:Marker4', 
-        'Rigid Body 2:Marker3',
-        'Rigid Body 1:Marker1', 
+    resp = input("Enter tag selection? (y/n)")
+    if resp.lower() == 'y':
+        start_end_links_tags = selectStartEndLinkTags(path_to_csv)
+    else:
+        print("Using manual entry for the variable start_end_link_tags.")
+        start_end_links_tags = [
 
-    ]
+            'Rigid Body 1:Marker1'
+
+        ]
 
     
     ### Function Call ###
     marker_tags = get_all_marker_tags(path_to_csv)
-    print(f"{marker_tags=}")
-    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True) # Creates video with specifications in directory shared with this file
+    create_MoCap_Video(file_name, path_to_csv, marker_tags, start_end_links_tags, do_system_COM=True, domain=[-1.2, 1]) # Creates video with specifications in directory shared with this file
 
     # Calculate joint angles (2D) and store them to a .csv file
-    rigid_bodies = {}
-    for tag in marker_tags:
-        rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, '#606060', '#000000', '#FF0000')
-    jointData = createJointAngles(rigid_bodies, start_end_links_tags, writeToTxt=True, filename="first_test") # jointData contains the information that was written to the text file
+    #rigid_bodies = {}
+    #for tag in marker_tags:
+    #    rigid_bodies[tag], data_length = create_marker_data(path_to_csv, tag, start_end_links_tags, '#606060', '#000000', '#FF0000')
+    #jointData = createJointAngles(rigid_bodies, start_end_links_tags, writeToTxt=True, filename="Joint Angles Take 2023-09-18 12.48.19 AM") # jointData contains the information that was written to the text file
     
 if __name__ == "__main__":
     main()
